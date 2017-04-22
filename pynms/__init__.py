@@ -1,4 +1,4 @@
-from pymns.nms_client import NmsClient
+from pynms.nms_client import NmsClient
 
 __version__ = '0.1.0'
 

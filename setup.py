@@ -4,17 +4,17 @@ from distutils.core import setup
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
-with open('pymns/__init__.py', 'rb') as f:
+with open('pynms/__init__.py', 'rb') as f:
     version = str(ast.literal_eval(_version_re.search(
         f.read().decode('utf-8')).group(1)))
 
-setup(name='pymns',
+setup(name='pynms',
       author='CYH',
-      url='https://github.com/ourbest/pymns',
+      url='https://github.com/ourbest/pynms',
       author_email='chenyonghui@gmail.com',
       version=version,
       description='ali nms simple client',
-      packages=['pymns'],
+      packages=['pynms'],
       classifiers=[
           'License :: OSI Approved :: BSD License',
           'Programming Language :: Python',
