@@ -1,6 +1,6 @@
 from pymns.mns_client import MNSClient
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 def connect(ak, sk, endpoint, queue_name):
