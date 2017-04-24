@@ -4,7 +4,7 @@ import pymns
 
 setup(name='pymns',
       author='CYH',
-      url='https://github.com/ourbest/pynms',
+      url='https://github.com/ourbest/pymns',
       author_email='chenyonghui@gmail.com',
       version=pymns.__version__,
       description='ali mns simple client',
