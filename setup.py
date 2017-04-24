@@ -8,7 +8,7 @@ setup(name='pymns',
       author_email='chenyonghui@gmail.com',
       version=pymns.__version__,
       description='ali mns simple client',
-      packages=['pynms'],
+      packages=['pymns'],
       classifiers=[
           'License :: OSI Approved :: BSD License',
           'Programming Language :: Python',
