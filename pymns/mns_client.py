@@ -2,16 +2,16 @@ import base64
 import hashlib
 import hmac
 import re
+import time
 
 import requests
-import time
 
 
 def send_message():
     pass
 
 
-class NmsResponse(object):
+class MNSResponse(object):
     __attrs__ = ['message_id', 'receipt_handler']
 
     def __init__(self, message_id, receipt_handler=None):
@@ -22,7 +22,7 @@ class NmsResponse(object):
         return self.message_id
 
 
-class NmsClient(object):
+class MNSClient(object):
     __attrs__ = ['ak', 'sk', 'endpoint', 'queue_name', 'path']
 
     def __init__(self, ak, sk, endpoint, queue_name):
@@ -54,7 +54,7 @@ class NmsClient(object):
             b64 = base64.b64decode(message_body).decode()
             if delete:
                 self.delete(handler)
-            return NmsResponse(b64, handler)
+            return MNSResponse(b64, handler)
 
         return None
 
@@ -69,7 +69,7 @@ class NmsClient(object):
         date_str = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
         auth = base64.b64encode(
             hmac.new(self.sk,
-                     ('POST\n\ntext/xml;charset=UTF-8\n' + date_str
+                     (method + '\n\ntext/xml;charset=UTF-8\n' + date_str
                       + '\nx-mns-version:2015-06-06\n' + path).encode(),
                      hashlib.sha1).digest()).decode()
 

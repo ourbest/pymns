@@ -1,1 +1,1 @@
-nms py
+simple MNS python client
