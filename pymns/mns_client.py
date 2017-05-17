@@ -145,6 +145,14 @@ class MNSClient(object):
 
         return None
 
+    def reset(self, handler, seconds=0):
+        path = '/queues/%s/messages?receiptHandle=%s&visibilityTimeout=%s' % (self.queue_name, handler, seconds)
+        response = self._call_api('PUT', path)
+        if response.status_code == 200:
+            return Message(response.text)
+
+        return None
+
     def delete(self, handler):
         path = self.path + '?ReceiptHandle=' + handler
         self._call_api('DELETE', path)
@@ -180,7 +188,7 @@ class MNSClient(object):
         else:
             args = []
             for item in attrs:
-                for k, v in item:
+                for k, v in item.items():
                     args.append('<%s>%s</%s>' % (k, v, k))
 
             return '<?xml version="1.0" encoding="UTF-8"?>\n<%s xmlns="http://mns.aliyuncs.com/doc/v1/">\n%s</%s>' \
