@@ -110,6 +110,8 @@ class MNSClient(object):
         return response.status_code == 204
 
     def batch_pop_messages(self, num, wait_seconds=None):
+        if num > 16:
+            raise ValueError('num must <= 16')
         path = '/queues/%s/messages?numOfMessages=%s&waitseconds=%s' % (self.queue_name, num, wait_seconds) \
             if wait_seconds is not None else '/queues/%s/messages?numOfMessages=%s' % (self.queue_name, num)
 
@@ -121,6 +123,9 @@ class MNSClient(object):
         return []
 
     def batch_delete(self, handlers):
+        if len(handlers) > 16:
+            raise ValueError('handlers must <= 16')
+
         response = self._call_api('DELETE', self.path, ns='ReceiptHandles',
                                   attrs=[{'ReceiptHandle': x} for x in handlers])
         if response.status_code == 204:
