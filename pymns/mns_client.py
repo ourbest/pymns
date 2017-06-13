@@ -58,53 +58,64 @@ class MNSClient(object):
 
     def send(self, message):
         b64 = base64.b64encode(message.encode('utf-8')).decode()
-        with self._call_api('POST', self.path, ns='Message', attrs={'MessageBody': b64}) as response:
-            if 300 > response.status_code >= 200:
-                return Message(response.text)
+        response = self._call_api('POST', self.path, ns='Message', attrs={'MessageBody': b64})
+        if 300 > response.status_code >= 200:
+            return Message(response.text)
+        response.close()
         return None
 
     def get_info(self):
         path = '/queues/' + self.queue_name
-        with self._call_api('GET', path) as response:
-            if response.status_code == 200:
-                xml = _parse_simple_xml(response.text)
-                self.delay_seconds = xml.get('DelaySeconds')
-                self.max_message_size = xml.get('MaximumMessageSize')
-                self.message_retention_period = xml.get('MessageRetentionPeriod')
-                self.polling_wait_seconds = xml.get('PollingWaitSeconds')
-                return xml
+        response = self._call_api('GET', path)
+        if response.status_code == 200:
+            xml = _parse_simple_xml(response.text)
+            self.delay_seconds = xml.get('DelaySeconds')
+            self.max_message_size = xml.get('MaximumMessageSize')
+            self.message_retention_period = xml.get('MessageRetentionPeriod')
+            self.polling_wait_seconds = xml.get('PollingWaitSeconds')
+            return xml
+        response.close()
         return dict()
 
     def set_attr(self):
         path = '/queues/%s?metaoverride=true' % self.queue_name
-        with self._call_api('PUT', path, attrs={
+        response = self._call_api('PUT', path, attrs={
             'DelaySeconds': self.delay_seconds,
             'PollingWaitSeconds': self.polling_wait_seconds,
             'VisibilityTimeout': self.visibility_timeout,
             'MaximumMessageSize': self.max_message_size,
             'MessageRetentionPeriod': self.message_retention_period,
             'LoggingEnabled': self.logging_enable
-        }) as response:
+        })
+        try:
             return response.status_code == 204
+        finally:
+            response.close()
 
     def create_queue(self):
-        with self._call_api('PUT', '/queues/' + self.queue_name, attrs={
+        response = self._call_api('PUT', '/queues/' + self.queue_name, attrs={
             'DelaySeconds': self.delay_seconds,
             'PollingWaitSeconds': self.polling_wait_seconds,
             'VisibilityTimeout': self.visibility_timeout,
             'MaximumMessageSize': self.max_message_size,
             'MessageRetentionPeriod': self.message_retention_period,
             'LoggingEnabled': self.logging_enable,
-        }) as response:
+        })
+        try:
             if response.status_code in (201, 204):
                 return 0
             elif response.status_code == 409:
                 return 1
+        finally:
+            response.close()
 
     def delete_queue(self):
         path = '/queues/%s' % self.queue_name
-        with self._call_api('DELETE', path) as response:
+        response = self._call_api('DELETE', path)
+        try:
             return response.status_code == 204
+        finally:
+            response.close()
 
     def batch_pop_messages(self, num, wait_seconds=None):
         if num > 16:
@@ -112,48 +123,54 @@ class MNSClient(object):
         path = '/queues/%s/messages?numOfMessages=%s&waitseconds=%s' % (self.queue_name, num, wait_seconds) \
             if wait_seconds is not None else '/queues/%s/messages?numOfMessages=%s' % (self.queue_name, num)
 
-        with self._call_api('GET', path) as response:
-            if 300 > response.status_code >= 200:
-                messages = re.findall(r'<Message>(.+?)</Message>', response.text.replace('\n', ''))
-                return [Message(x) for x in messages]
+        response = self._call_api('GET', path)
+        if 300 > response.status_code >= 200:
+            messages = re.findall(r'<Message>(.+?)</Message>', response.text.replace('\n', ''))
+            return [Message(x) for x in messages]
 
-            return []
+        response.close()
+        return []
 
     def batch_delete(self, handlers):
         if len(handlers) > 16:
             raise ValueError('handlers must <= 16')
 
-        with self._call_api('DELETE', self.path, ns='ReceiptHandles',
-                            attrs=[{'ReceiptHandle': x} for x in handlers]) as response:
+        response = self._call_api('DELETE', self.path, ns='ReceiptHandles',
+                                  attrs=[{'ReceiptHandle': x} for x in handlers])
+        try:
             if response.status_code == 204:
                 return handlers
 
             # todo parse errors
             return []
+        finally:
+            response.close()
 
     def peek(self):
         path = self.path + '?peekonly=true'
-        with self._call_api('GET', path) as response:
-            return Message(response.text)
+        response = self._call_api('GET', path)
+        return Message(response.text)
 
     def pop(self, wait_seconds=None, delete=False):
         path = self.path if wait_seconds is None else self.path + '?waitseconds=' + str(wait_seconds)
-        with self._call_api('GET', path) as response:
-            if 300 > response.status_code >= 200:
-                message = Message(response.text)
-                if delete:
-                    self.delete(message.receipt_handle)
-                return message
+        response = self._call_api('GET', path)
+        if 300 > response.status_code >= 200:
+            message = Message(response.text)
+            if delete:
+                self.delete(message.receipt_handle)
+            return message
 
+        response.close()
         return None
 
     def reset(self, handler, seconds=0):
         path = '/queues/%s/messages?receiptHandle=%s&visibilityTimeout=%s' % (self.queue_name, handler, seconds)
-        with self._call_api('PUT', path) as response:
-            if response.status_code == 200:
-                return Message(response.text)
+        response = self._call_api('PUT', path)
+        if response.status_code == 200:
+            return Message(response.text)
 
-            return None
+        response.close()
+        return None
 
     def delete(self, handler):
         path = self.path + '?ReceiptHandle=' + handler
